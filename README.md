@@ -32,7 +32,8 @@ This will help me in giving them all the results to work with -- and to what to 
 ### Usage
 
 Help menu
-```bash
+
+```csharp
 └─$ python3 route53Records.py --help
 [#] Usage: python3 route53Records.py --all
 
@@ -47,7 +48,8 @@ Arguments:
 ```
 
 Listing all the domains (hosted zones) present in the AWS account
-```bash
+
+```csharp
 └─$ python3 route53Records.py --list
 
 -------------------------------------------------------
@@ -58,8 +60,9 @@ Listing all the domains (hosted zones) present in the AWS account
 [2]     test2.com.
 ```
 
-Fetching results of specific hosted zones (id from --list)
-```bash
+Fetching results of specific hosted zones (*id* from *--list*)
+
+```csharp
 └─$ python3 route53Records.py --fetch 1
 
 -------------------------------------------------------
