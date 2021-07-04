@@ -34,13 +34,15 @@ This will help me in giving them all the results to work with -- and to what to 
 Help menu
 
 ```csharp
-└─$ python3 route53Records.py --help
+$ python3 route53Records.py --help
 [#] Usage: python3 route53Records.py --all
 
 Basic Help:
   -h, --help            show this help message and exit
 
 Arguments:
+  -r REGION, --region REGION
+                        Specify region (default: eu-west-1)
   -l, --list            List all hosted zones with Ids
   -f FETCH, --fetch FETCH
                         Fetch select zones and records
@@ -50,7 +52,7 @@ Arguments:
 Listing all the domains (hosted zones) present in the AWS account
 
 ```csharp
-└─$ python3 route53Records.py --list
+$ python3 route53Records.py --list
 
 -------------------------------------------------------
                Listing hosted zones ...
@@ -63,7 +65,7 @@ Listing all the domains (hosted zones) present in the AWS account
 Fetching results of specific hosted zones (*id* from *--list*)
 
 ```csharp
-└─$ python3 route53Records.py --fetch 1
+$ python3 route53Records.py --fetch 1
 
 -------------------------------------------------------
                Listing hosted zones ...
@@ -94,11 +96,8 @@ Fetching results of specific hosted zones (*id* from *--list*)
 
 In the above case **subdomain1** and **subdomain2** are takeoverable!
 
-### Note
-The script currently has the region check hard-coded in the line 87 -- Please edit it to the region you're working with -- I'm really lazy to add a dynamic check :stuck_out_tongue:
-
 ### Todos
-- Add region check (what region are we in?)
+- <s>Add region check (what region are we in?)</s>
 - Add Slack alerting
 - Create a Docker image of the script
 - Integrate Static hosting S3 bucket takeover check

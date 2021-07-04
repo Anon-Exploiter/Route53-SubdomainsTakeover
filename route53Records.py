@@ -7,7 +7,9 @@ import sys
 import json
 import os
 
+
 PROCESSES   = 5
+
 
 def listHostsZones():
     hostIds = {}
@@ -71,7 +73,7 @@ def getZoneDetails(hostName, hostId):
     return(results)
 
 
-def parseElasticBeanStalkInstances(jsonBlob):
+def parseElasticBeanStalkInstances(jsonBlob, region):
     '''
     Parses the results to remove bogus DNS records and
     returns two lists containing subdomains and records
@@ -84,7 +86,7 @@ def parseElasticBeanStalkInstances(jsonBlob):
 
     for subdomain, dnsRecord in zip(jsonBlob.keys(), jsonBlob.values()):
         if ".elasticbeanstalk." in dnsRecord:
-            if "eu-west-1" in dnsRecord:
+            if region in dnsRecord:
                 record = dnsRecord.split(".")
                 record = [x for x in record if x] # Remove spaces
 
@@ -120,9 +122,10 @@ def addArguments():
     parser._optionals.title = "Basic Help"
 
     opts = parser.add_argument_group(f'Arguments')
-    opts.add_argument('-l', '--list',   action="store_true", dest="list",     default=False, help='List all hosted zones with Ids')
-    opts.add_argument('-f', '--fetch',  action="store",      dest="fetch",    default=False, help='Fetch select zones and records')
-    opts.add_argument('-a', '--all',    action="store_true", dest="all",      default=False, help='Get all the zones and their records')
+    opts.add_argument('-r', '--region',   action="store",      dest="region",   default=False, help='Specify region (default: eu-west-1)')
+    opts.add_argument('-l', '--list',     action="store_true", dest="list",     default=False, help='List all hosted zones with Ids')
+    opts.add_argument('-f', '--fetch',    action="store",      dest="fetch",    default=False, help='Fetch select zones and records')
+    opts.add_argument('-a', '--all',      action="store_true", dest="all",      default=False, help='Get all the zones and their records')
 
     args = parser.parse_args()
     return(args, parser)
@@ -153,7 +156,13 @@ def main():
                 zoneDetails = getZoneDetails(hostName, hostId)
 
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
-                subd, rec = parseElasticBeanStalkInstances(zoneDetails)
+
+                if args.region:
+                    subd, rec = parseElasticBeanStalkInstances(zoneDetails, args.region)
+
+                else:
+                    subd, rec = parseElasticBeanStalkInstances(zoneDetails, 'eu-west-1')
+
 
                 # for subdomains, records in zip(subd, rec):
                 #     checkElasticBeanStalkTakeover(subdomains, records)
@@ -173,7 +182,12 @@ def main():
             zoneDetails = getZoneDetails(hostName, hostId)
 
             heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
-            subd, rec = parseElasticBeanStalkInstances(zoneDetails)
+            
+            if args.region:
+                subd, rec = parseElasticBeanStalkInstances(zoneDetails, args.region)
+
+            else:
+                subd, rec = parseElasticBeanStalkInstances(zoneDetails, 'eu-west-1')
 
             # for subdomains, records in zip(subd, rec):
             #     checkElasticBeanStalkTakeover(subdomains, records)
