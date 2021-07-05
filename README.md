@@ -8,7 +8,7 @@
 [issues-shield]: https://img.shields.io/github/issues/Anon-Exploiter/Route53-SubdomainsTakeover.svg?style=flat-square
 [issues-url]: https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/issues
 
-A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each zone (domain) then check all the records containing elasticbeanstalk applications -- **if they're takeoverable**.  
+A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each zone (domain) then check all the records containing elasticbeanstalk applications -- **if they're takeoverable** -- and post all that on Slack!  
 
 ### Tested On (OS & Python version)
 - WSL2 - Ubuntu 20.04 LTS -- Python 3.8.5
