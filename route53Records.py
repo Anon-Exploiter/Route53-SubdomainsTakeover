@@ -1,4 +1,5 @@
 from pygments import highlight, lexers, formatters
+from itertools import repeat
 from utils import *
 
 import concurrent.futures
@@ -6,9 +7,13 @@ import argparse
 import sys
 import json
 import os
+import boto3
+
+import urllib.request
+import urllib.parse
 
 
-PROCESSES   = 5
+PROCESSES   = 10
 
 
 def listHostsZones():
@@ -100,48 +105,71 @@ def parseElasticBeanStalkInstances(jsonBlob, region):
     return(subd, rec)
 
 
-def checkElasticBeanStalkTakeover(subdomain, record):
+def createElasticBeanStalkClient():
+    return boto3.client('elasticbeanstalk')
+
+
+def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
+    post = ''
     appName = record.split(".")[0]
 
-    command = f"aws elasticbeanstalk check-dns-availability --cname-prefix {appName}"
-    results = os.popen(command).read()
+    response = eBeanStalkClientCall.check_dns_availability(
+        CNAMEPrefix = appName
+    )
 
-    jsonData = json.loads(results)
+    jsonData = json.loads( json.dumps(response, default=str) )
     available = jsonData.get('Available')
     fqCNAME = jsonData.get('FullyQualifiedCNAME')
 
     if available == True:
         write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{record}")
+        post += f"- {subdomain} - {record} - *Vulnerable*\n"
 
     else:
         write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{available}{w}, {y}{record}")
+
+    return(post)
 
 
 def addArguments():
     parser = argparse.ArgumentParser(description='', usage=f'\r[#] Usage: python3 {sys.argv[0]} --all')
     parser._optionals.title = "Basic Help"
 
-    opts = parser.add_argument_group(f'Arguments')
-    opts.add_argument('-r', '--region',   action="store",      dest="region",   default=False, help='Specify region (default: eu-west-1)')
+    opts = parser.add_argument_group(f'Script Arguments')
     opts.add_argument('-l', '--list',     action="store_true", dest="list",     default=False, help='List all hosted zones with Ids')
     opts.add_argument('-f', '--fetch',    action="store",      dest="fetch",    default=False, help='Fetch select zones and records')
     opts.add_argument('-a', '--all',      action="store_true", dest="all",      default=False, help='Get all the zones and their records')
+
+    others = parser.add_argument_group(f'Optional Arguments')
+    others.add_argument('-r', '--region',  action="store", dest="region",  default=False, help='Specify region (default: eu-west-1)')
+    others.add_argument('-w', '--webhook', action="store", dest="webhook", default=False, help='Slack Webhook URL to post to')
 
     args = parser.parse_args()
     return(args, parser)
 
 
+def webHookPost(webhook, data):
+    print(data)
+    data = json.dumps({'text': data}).encode('utf-8')
+
+    print(data)
+    req  = urllib.request.Request(webhook, data, {'Content-Type': 'application/json'})
+    resp = urllib.request.urlopen(req)
+    response = resp.read()
+    print(response)
+
+
 def main():
     args, parser = addArguments()
-
 
     if args.list:
         heading(heading='Listing hosted zones', color=y, afterWebHead='')
         hostedZones     = listHostsZones()
         parsedResults   = parseHostsZone(hostedZones)
 
-
     elif args.fetch:
+        if args.webhook: slackPost = ''
+
         heading(heading='Listing hosted zones', color=y, afterWebHead='')
         hostedZones     = listHostsZones()
 
@@ -155,6 +183,7 @@ def main():
                 heading(heading=hostName, color=m, afterWebHead='')
                 zoneDetails = getZoneDetails(hostName, hostId)
 
+                if args.webhook: slackPost += f"\nHost: *{hostName}*\n\n"
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
                 if args.region:
@@ -163,39 +192,50 @@ def main():
                 else:
                     subd, rec = parseElasticBeanStalkInstances(zoneDetails, 'eu-west-1')
 
+                clientCall = createElasticBeanStalkClient()
 
-                # for subdomains, records in zip(subd, rec):
-                #     checkElasticBeanStalkTakeover(subdomains, records)
+                if args.webhook:
+                    for subdomains, records in zip(subd, rec):
+                        slackPost += str(checkElasticBeanStalkTakeover(clientCall, subdomains, records))
 
-                # Multiprocessing -- Was getting errors due to rate limiting on AWS's side - Still let it be ;__; weeeeee
-                with concurrent.futures.ProcessPoolExecutor(max_workers = PROCESSES) as executor:
-                    executor.map(checkElasticBeanStalkTakeover, subd, rec)
+                    webHookPost(args.webhook, slackPost)
 
+                else:
+                    for subdomains, records in zip(subd, rec):
+                        checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
     elif args.all:
         heading(heading='Listing hosted zones', color=y, afterWebHead='')
+        
         hostedZones     = listHostsZones()
         parsedResults   = parseHostsZone(hostedZones)
 
         for hostName, hostId in zip(hostedZones.keys(), hostedZones.values()):
+            if args.webhook: slackPost = ''
+
             heading(heading=hostName, color=m, afterWebHead='')
             zoneDetails = getZoneDetails(hostName, hostId)
 
+            if args.webhook: slackPost += f"\nHost: *{hostName}*\n\n"
             heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
-            
+
             if args.region:
                 subd, rec = parseElasticBeanStalkInstances(zoneDetails, args.region)
 
             else:
                 subd, rec = parseElasticBeanStalkInstances(zoneDetails, 'eu-west-1')
 
-            # for subdomains, records in zip(subd, rec):
-            #     checkElasticBeanStalkTakeover(subdomains, records)
+            clientCall = createElasticBeanStalkClient()
 
-            # Multiprocessing -- Was getting errors due to rate limiting on AWS's side - Still let it be ;__; weeeeee
-            with concurrent.futures.ProcessPoolExecutor(max_workers = PROCESSES) as executor:
-                executor.map(checkElasticBeanStalkTakeover, subd, rec)
+            if args.webhook:
+                for subdomains, records in zip(subd, rec):
+                    slackPost += str(checkElasticBeanStalkTakeover(clientCall, subdomains, records))
 
+                webHookPost(args.webhook, slackPost)
+
+            else:
+                for subdomains, records in zip(subd, rec):
+                    checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
     else:
     	parser.print_help()
