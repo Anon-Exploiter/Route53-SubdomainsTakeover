@@ -98,7 +98,7 @@ In the above case **subdomain1** and **subdomain2** are takeoverable!
 
 ### Todos
 - <s>Add region check (what region are we in?)</s>
-- Add Slack alerting
+- <s>Add Slack alerting</s> <small>[5b6d279](https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/commit/5b6d27918079af709d58f29400be4591c5c3238e)</small> covers it
 - Create a Docker image of the script
 - Integrate Static hosting S3 bucket takeover check
 - Integrate other open-source subdomain takeover check scripts
