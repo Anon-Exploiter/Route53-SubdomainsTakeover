@@ -10,20 +10,10 @@
 
 A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each zone (domain) then check all the records containing elasticbeanstalk applications -- **if they're takeoverable** -- and post all that on Slack!  
 
-***Readme's kinda not updated since the script is under development**
+***This is readme for installation on AWS lambda -- Visit master branch for running on CLI!**
 
 ### Tested On (OS & Python version)
-- WSL2 - Ubuntu 20.04 LTS -- Python 3.8.5
-
-### Downloading & Installation
-```bash
-git clone https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover
-cd Route53-SubdomainsTakeover/
-python3 -m venv env && source env/bin/activate # Create virtualenv to install packages in
-pip install -r requirements.txt
-
-python3 route53Records.py
-```
+- AWS Lambda - Python 3.8
 
 ### Why?
 
@@ -31,80 +21,26 @@ Wrote this for a client they had over **1000+ elasticbeanstalk applications** an
 
 This will help me in giving them all the results to work with -- and to what to remove and what to not! 
 
-### Usage
+### Installation on Lambda
 
-Help menu
+First of all pull the **layers** below and upload and create in your AWS account: 
+- https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/releases/download/0.1/route53-subdomain-takeover-layer.zip
+- https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/releases/download/0.1/awscli-lambda-layer.zip
 
-```csharp
-$ python3 route53Records.py --help
-[#] Usage: python3 route53Records.py --all
+Now go ahead and create a **lambda function** with a new role. After creation of the IAM role, edit it's permissions and add the following policy:
+- `AmazonRoute53ReadOnlyAccess`
 
-Basic Help:
-  -h, --help            show this help message and exit
+After creation of Lambda function and adding of layers, upload the following from the `aws-lambda` branch of GitHub (Make sure to create the utils folder):
+- lambda_function.py
+- utils/__init__.py
+- utils/colors.py
+- utils/functions.py
 
-Arguments:
-  -r REGION, --region REGION
-                        Specify region (default: eu-west-1)
-  -l, --list            List all hosted zones with Ids
-  -f FETCH, --fetch FETCH
-                        Fetch select zones and records
-  -a, --all             Get all the zones and their records
-```
+Now, create the following environmental variables (not required -- if `region` isn't specified default gets to `eu-west-1` and if no `webhook` is passed, nothing will be posted -- the script still executes)
+- WEBHOOK_URL
+- REGION
 
-Listing all the domains (hosted zones) present in the AWS account
-
-```csharp
-$ python3 route53Records.py --list
-
--------------------------------------------------------
-               Listing hosted zones ...
--------------------------------------------------------
-
-[1]     test1.com.
-[2]     test2.com.
-```
-
-Fetching results of specific hosted zones (*id* from *--list*)
-
-```csharp
-$ python3 route53Records.py --fetch 1
-
--------------------------------------------------------
-               Listing hosted zones ...
--------------------------------------------------------
-
-[1]     test1.com.
-[2]     test2.com.
-
-
-----------------------------------------------
-                test1.com. ...
-----------------------------------------------
-{
-    "subdomain1.test1.com.": "subdomain1.us-east-1.elasticbeanstalk.com",
-    "subdomain2.test1.com.": "subdomain2.us-east-1.elasticbeanstalk.com",
-    "subdomain3.test1.com.": "subdomain3.us-east-1.elasticbeanstalk.com",
-    ...
-}
-
------------------------------------------------------------------------------------
-               Checking ElasticBeanStalk takeoverable instances ...
------------------------------------------------------------------------------------
-
-[!]  subdomain1.test1.com., 'CanTakeOver', subdomain1.us-east-1.elasticbeanstalk.com
-[!]  subdomain2.test1.com., False, subdomain2.us-east-1.elasticbeanstalk.com
-[!]  subdomain3.test1.com., 'CanTakeOver', subdomain3.us-east-1.elasticbeanstalk.com
-```
-
-In the above case **subdomain1** and **subdomain2** are takeoverable!
-
-### Todos
-- <s>Add region check (what region are we in?)</s>
-- <s>Add Slack alerting</s> <small>[5b6d279](https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/commit/5b6d27918079af709d58f29400be4591c5c3238e)</small> covers it
-- Create a Docker image of the script
-- Integrate Static hosting S3 bucket takeover check
-- Integrate other open-source subdomain takeover check scripts
-- Do more QA testing
+`REGION` -> is the AWS region we want to work with -- While `WEBHOOK_URL` contains the Slack channel WebHook URL to post to.
 
 ### Filing Bugs/Contribution
 Feel free to file a issue or create a PR for that issue if you come across any.
