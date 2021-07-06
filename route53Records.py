@@ -15,6 +15,11 @@ PROCESSES   = 10
 
 
 def listHostsZones():
+    '''
+    Fetches all the hostedzones and returns a JSON
+    object with format {"domain.tld": "zoneId"}
+    '''
+
     hostIds = {}
 
     command = 'aws route53 list-hosted-zones'
@@ -31,6 +36,10 @@ def listHostsZones():
 
 
 def parseHostsZone(hostedZones):
+    '''
+    Beautify and print the hostedzones -> domains
+    '''
+
     count = 1
 
     for key, vals in zip(hostedZones.keys(), hostedZones.values()):
@@ -39,6 +48,12 @@ def parseHostsZone(hostedZones):
 
 
 def getZoneDetails(hostName, hostId, jsonOutput=False):
+    '''
+    Get the DNS records of the specified hostName or
+    hosted zone and find and return all CNAME records
+    within it
+    '''
+
     results = {}
 
     command = f'aws route53 list-resource-record-sets --hosted-zone-id {hostId}'
@@ -105,10 +120,24 @@ def parseElasticBeanStalkInstances(jsonBlob, region):
 
 
 def createElasticBeanStalkClient():
+    '''
+    Boto3 client call required prior to do any
+    other API calls
+    '''
+
     return boto3.client('elasticbeanstalk')
 
 
 def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
+    '''
+    Does check_dns_availability(
+        CNAMEPrefix = appName
+    )
+
+    against the specified application and checks if 
+    we can take over the application name
+    '''
+
     post = ''
     appName = record.split(".")[0]
 
@@ -131,6 +160,10 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
 
 
 def addArguments():
+    '''
+    Args
+    '''
+
     parser = argparse.ArgumentParser(description='', usage=f'\r[#] Usage: python3 {argv[0]} --all')
     parser._optionals.title = "Basic Help"
 
@@ -150,6 +183,11 @@ def addArguments():
 
 
 def webHookPost(webhook, data):
+    '''
+    Function to post to Slack data, takes in the 
+    webhook url and the data to post
+    '''
+
     data = json.dumps({'text': data}).encode('utf-8')
     req  = urllib.request.Request(webhook, data, {'Content-Type': 'application/json'})
     resp = urllib.request.urlopen(req)
@@ -157,6 +195,11 @@ def webHookPost(webhook, data):
 
 
 def formatSlackPostToCSV(post):
+    '''
+    Convers the Slack Post formatted into CSV
+    to write to domain.tld.csv
+    '''
+
     return post.replace(' - ', ',').replace('- ', '')
 
 
