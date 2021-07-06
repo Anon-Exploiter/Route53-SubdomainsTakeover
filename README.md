@@ -10,6 +10,8 @@
 
 A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each zone (domain) then check all the records containing elasticbeanstalk applications -- **if they're takeoverable** -- and post all that on Slack!  
 
+***Readme's kinda not updated since the script is under development**
+
 ### Tested On (OS & Python version)
 - WSL2 - Ubuntu 20.04 LTS -- Python 3.8.5
 
