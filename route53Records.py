@@ -124,7 +124,7 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
 
     if available == True:
         write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{record}")
-        post += f"- {subdomain} - {record} - *Vulnerable*\n"
+        post += f"- {subdomain} - {record}\n"
 
     else:
         write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{available}{w}, {y}{record}")
@@ -145,20 +145,21 @@ def addArguments():
     others.add_argument('-r', '--region',  action="store",      dest="region",  default=False, help='Specify region (default: eu-west-1)')
     others.add_argument('-w', '--webhook', action="store",      dest="webhook", default=False, help='Slack Webhook URL to post to')
     others.add_argument('-j', '--json',    action="store_true", dest="json",    default=False, help='Output route53 CNAME records in JSON')
+    others.add_argument('-c', '--csv',     action="store_true", dest="csv",     default=False, help='Output the vulnerable subdomains and records in CSV files')
 
     args = parser.parse_args()
     return(args, parser)
 
 
 def webHookPost(webhook, data):
-    print(data)
     data = json.dumps({'text': data}).encode('utf-8')
-
-    print(data)
     req  = urllib.request.Request(webhook, data, {'Content-Type': 'application/json'})
     resp = urllib.request.urlopen(req)
     response = resp.read()
-    print(response)
+
+
+def formatSlackPostToCSV(post):
+    return post.replace(' - ', ',').replace('- ', '')
 
 
 def main():
@@ -169,9 +170,8 @@ def main():
         hostedZones     = listHostsZones()
         parsedResults   = parseHostsZone(hostedZones)
 
-    elif args.fetch:
-        if args.webhook: slackPost = ''
 
+    elif args.fetch:
         heading(heading='Listing hosted zones', color=y, afterWebHead='')
         hostedZones     = listHostsZones()
 
@@ -185,7 +185,14 @@ def main():
                 heading(heading=hostName, color=m, afterWebHead='')
                 zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
-                if args.webhook: slackPost += f"\n*Host: `{hostName}`*\n\n"
+                if args.webhook: 
+                    slackPost = f"\n*Host: `{hostName}`*\n\n"
+                    _slack = ''
+
+                if args.csv:
+                    csvData = ''
+                    with open(f'{hostName}csv', 'w+') as f: f.write('Subdomain,CNAME record\n')
+
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
                 if args.region:
@@ -198,13 +205,21 @@ def main():
 
                 if args.webhook:
                     for subdomains, records in zip(subd, rec):
-                        slackPost += str(checkElasticBeanStalkTakeover(clientCall, subdomains, records))
+                        _slack += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
+                    if args.csv:
+                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+
+                    slackPost += _slack
                     webHookPost(args.webhook, slackPost)
 
                 else:
                     for subdomains, records in zip(subd, rec):
-                        checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+                        csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+                    
+                    if args.csv:
+                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+
 
     elif args.all:
         heading(heading='Listing hosted zones', color=y, afterWebHead='')
@@ -213,12 +228,17 @@ def main():
         parsedResults   = parseHostsZone(hostedZones)
 
         for hostName, hostId in zip(hostedZones.keys(), hostedZones.values()):
-            if args.webhook: slackPost = ''
-
             heading(heading=hostName, color=m, afterWebHead='')
             zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
-            if args.webhook: slackPost += f"\nHost: *{hostName}*\n\n"
+            if args.webhook: 
+                slackPost = f"\n*Host: `{hostName}`*\n\n"
+                _slack = ''
+
+            if args.csv:
+                csvData = ''
+                with open(f'{hostName}csv', 'w+') as f: f.write('Subdomain,CNAME record\n')
+
             heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
             if args.region:
@@ -231,13 +251,21 @@ def main():
 
             if args.webhook:
                 for subdomains, records in zip(subd, rec):
-                    slackPost += str(checkElasticBeanStalkTakeover(clientCall, subdomains, records))
+                    _slack += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
+                if args.csv:
+                    with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+
+                slackPost += _slack
                 webHookPost(args.webhook, slackPost)
 
             else:
                 for subdomains, records in zip(subd, rec):
-                    checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+                    csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+                
+                if args.csv:
+                    with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+
 
     else:
     	parser.print_help()
