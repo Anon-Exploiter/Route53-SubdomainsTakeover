@@ -1,10 +1,8 @@
 from pygments import highlight, lexers, formatters
-from itertools import repeat
 from utils import *
+from sys import argv
 
-import concurrent.futures
 import argparse
-import sys
 import json
 import os
 import boto3
@@ -133,7 +131,7 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
 
 
 def addArguments():
-    parser = argparse.ArgumentParser(description='', usage=f'\r[#] Usage: python3 {sys.argv[0]} --all')
+    parser = argparse.ArgumentParser(description='', usage=f'\r[#] Usage: python3 {argv[0]} --all')
     parser._optionals.title = "Basic Help"
 
     opts = parser.add_argument_group(f'Script Arguments')
@@ -214,11 +212,15 @@ def main():
                     webHookPost(args.webhook, slackPost)
 
                 else:
-                    for subdomains, records in zip(subd, rec):
-                        csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
-                    
                     if args.csv:
+                        for subdomains, records in zip(subd, rec):
+                            csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+
                         with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+
+                    else:
+                        for subdomains, records in zip(subd, rec):
+                            checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
 
     elif args.all:
@@ -260,11 +262,15 @@ def main():
                 webHookPost(args.webhook, slackPost)
 
             else:
-                for subdomains, records in zip(subd, rec):
-                    csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
-                
                 if args.csv:
+                    for subdomains, records in zip(subd, rec):
+                        csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+
                     with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+
+                else:
+                    for subdomains, records in zip(subd, rec):
+                        checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
 
     else:
