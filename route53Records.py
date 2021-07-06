@@ -183,7 +183,7 @@ def main():
                 heading(heading=hostName, color=m, afterWebHead='')
                 zoneDetails = getZoneDetails(hostName, hostId)
 
-                if args.webhook: slackPost += f"\nHost: *{hostName}*\n\n"
+                if args.webhook: slackPost += f"\n*Host: `{hostName}`*\n\n"
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
                 if args.region:
