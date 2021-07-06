@@ -40,7 +40,7 @@ def parseHostsZone(hostedZones):
         count += 1
 
 
-def getZoneDetails(hostName, hostId):
+def getZoneDetails(hostName, hostId, jsonOutput=False):
     results = {}
 
     command = f'aws route53 list-resource-record-sets --hosted-zone-id {hostId}'
@@ -71,9 +71,10 @@ def getZoneDetails(hostName, hostId):
     results = json.dumps(results, default=str, indent=4)
     print(highlight(results, lexers.JsonLexer(), formatters.TerminalFormatter()))
 
-    fileName = ".".join(hostName.split(".")[:-1])
-    with open(f'{fileName}.json', 'w+') as f:
-        f.write(results)
+    if jsonOutput:
+        fileName = ".".join(hostName.split(".")[:-1])
+        with open(f'{fileName}.json', 'w+') as f:
+            f.write(results)
 
     return(results)
 
@@ -141,8 +142,9 @@ def addArguments():
     opts.add_argument('-a', '--all',      action="store_true", dest="all",      default=False, help='Get all the zones and their records')
 
     others = parser.add_argument_group(f'Optional Arguments')
-    others.add_argument('-r', '--region',  action="store", dest="region",  default=False, help='Specify region (default: eu-west-1)')
-    others.add_argument('-w', '--webhook', action="store", dest="webhook", default=False, help='Slack Webhook URL to post to')
+    others.add_argument('-r', '--region',  action="store",      dest="region",  default=False, help='Specify region (default: eu-west-1)')
+    others.add_argument('-w', '--webhook', action="store",      dest="webhook", default=False, help='Slack Webhook URL to post to')
+    others.add_argument('-j', '--json',    action="store_true", dest="json",    default=False, help='Output route53 CNAME records in JSON')
 
     args = parser.parse_args()
     return(args, parser)
@@ -181,7 +183,7 @@ def main():
 
             if hostName == userInp:
                 heading(heading=hostName, color=m, afterWebHead='')
-                zoneDetails = getZoneDetails(hostName, hostId)
+                zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
                 if args.webhook: slackPost += f"\n*Host: `{hostName}`*\n\n"
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
@@ -214,7 +216,7 @@ def main():
             if args.webhook: slackPost = ''
 
             heading(heading=hostName, color=m, afterWebHead='')
-            zoneDetails = getZoneDetails(hostName, hostId)
+            zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
             if args.webhook: slackPost += f"\nHost: *{hostName}*\n\n"
             heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
