@@ -13,13 +13,7 @@ A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each 
 ***This is readme for installation on AWS lambda -- Visit master branch for running on CLI!**
 
 ### Tested On (OS & Python version)
-- AWS Lambda - Python 3.8
-
-### Why?
-
-Wrote this for a client they had over **1000+ elasticbeanstalk applications** and then Route53 DNS records pointing to them - **Almost 90% were stale** and some **subdomains were publicly foundable/dorkable**. 
-
-This will help me in giving them all the results to work with -- and to what to remove and what to not! 
+- AWS Lambda - Python 3.8 
 
 ### Installation on Lambda
 
