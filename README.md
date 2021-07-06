@@ -26,7 +26,7 @@ Now go ahead and create a **lambda function** with a new role. After creation of
 
 After creation of Lambda function and adding of layers, upload the following from the `aws-lambda` branch of GitHub (Make sure to create the utils folder):
 - lambda_function.py
-- utils/__init__.py
+- utils/\_\_init\_\_.py
 - utils/colors.py
 - utils/functions.py
 
