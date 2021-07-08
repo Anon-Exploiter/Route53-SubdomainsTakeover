@@ -60,6 +60,9 @@ Now, create the following environmental variables (not required -- if `region` i
 
 `REGION` -> is the AWS region we want to work with -- While `WEBHOOK_URL` contains the Slack channel WebHook URL to post to.
 
+### Note
+- Make sure to increase the execution time of the Lambda function!
+
 ### Filing Bugs/Contribution
 
 Feel free to file a issue or create a PR for that issue if you come across any.
