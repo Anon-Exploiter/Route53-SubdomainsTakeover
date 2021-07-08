@@ -144,6 +144,60 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
     return(post)
 
 
+def S3ResourceCall():
+    return boto3.resource('s3')
+
+
+def getBucketNamesFromResults(jsonBlob):
+    subds = []
+    buckets = []
+    recs = []
+
+    isBucket = True
+    jsonBlob = json.loads(jsonBlob)
+
+    for subdomain, dnsRecord in zip(jsonBlob.keys(), jsonBlob.values()):
+        if "s3-website" in dnsRecord:
+            isBucket = False
+            results = dnsRecord.split(".s3-website")
+            bucketName = results[0]
+
+            subds.append(subdomain)
+            buckets.append(bucketName)
+            recs.append(dnsRecord)
+
+    if isBucket:
+        print('No buckets for this hosts zone..')
+
+    return(subds, buckets, recs)
+
+
+def checkS3BucketTakeover(s3_resource, subdomain, bucketName, dnsRecords):
+    post = ''
+
+    try:
+        s3_resource.meta.client.head_bucket(Bucket=bucketName)
+        canTakeOver = False
+    
+    except ClientError as error:
+        error_code = int(error.response['Error']['Code'])
+        
+        if error_code == 403:
+            canTakeOver = False
+        
+        elif error_code == 404:
+            canTakeOver = True
+    
+    if canTakeOver == True:
+        print(f"{subdomain}, 'CanTakeOver', {dnsRecords}")
+        post += f"• {subdomain} — *`{dnsRecords}`*\n"
+
+    else:
+        print(f"{subdomain}, {canTakeOver}, {dnsRecords}")
+
+    return(post)
+
+
 def webHookPost(webhook, data):
     '''
     Function to post to Slack data, takes in the 
@@ -157,20 +211,29 @@ def webHookPost(webhook, data):
 
 
 def lambda_handler(event, context):
-    print('Listing hosted zones\n')
-    
-    hostedZones     = listHostsZones()
-    parsedResults   = parseHostsZone(hostedZones)
-
     webhook = os.getenv('WEBHOOK_URL')
     region = os.getenv('REGION')
+    
+    print('Listing hosted zones\n')
+    
+    hostedZones = listHostsZones()
+    parsedResults = parseHostsZone(hostedZones)
 
     for hostName, hostId in zip(hostedZones.keys(), hostedZones.values()):
         _slack = ''
-        print(f"{hostName}\n")
-
-        zoneDetails = getZoneDetails(hostName, hostId, False)
         slackPost = f"\n*Following DNS records have been detected to be potentially stale and vulnerable to subdomain takeover for hosted zone: `{hostName}`*\n\n"
+
+        print(f"{hostName}\n")
+        zoneDetails = getZoneDetails(hostName, hostId, False)
+
+        print("Checking S3 takeoverable buckets")
+        subds, buckets, recs = getBucketNamesFromResults(zoneDetails)
+
+        if len(buckets) != 0:
+            s3rsCall = S3ResourceCall()
+
+            for subdomains, bckets, dnsRecords in zip(subds, buckets, recs):
+                _slack += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
 
         print("Checking ElasticBeanStalk takeoverable instances")
 
@@ -179,7 +242,6 @@ def lambda_handler(event, context):
 
         else:
             subd, rec = parseElasticBeanStalkInstances(zoneDetails, 'eu-west-1')
-
 
         clientCall = createElasticBeanStalkClient()
 
