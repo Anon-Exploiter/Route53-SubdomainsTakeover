@@ -30,7 +30,8 @@ mkdir -p python && \
     cd python && \
     pip install -r ../requirements.txt -t . && \
     cd ../ && \
-    zip -rv route53-subdomain-takeover-layer.zip python/
+    zip -rv route53-subdomain-takeover-layer.zip python/ && \
+    rm -rfv python/
 ```
 
 Now we need another layer for `awscli` binary, the docker image of AWS lambda is kinda weird, so the following script sets up the whole layer for us:
