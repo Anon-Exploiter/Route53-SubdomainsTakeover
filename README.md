@@ -24,17 +24,15 @@ First of all pull the **layers** below and upload and create in your AWS account
 Now go ahead and create a **lambda function** with a new role. After creation of the IAM role, edit it's permissions and add the following policy:
 - `AmazonRoute53ReadOnlyAccess`
 
-After creation of Lambda function and adding of layers, upload the following from the `aws-lambda` branch of GitHub (Make sure to create the utils folder):
+After creation of Lambda function and adding of layers, upload the following from the `aws-lambda` branch of GitHub:
 - lambda_function.py
-- utils/\_\_init\_\_.py
-- utils/colors.py
-- utils/functions.py
 
-Now, create the following environmental variables (not required -- if `region` isn't specified default gets to `eu-west-1` and if no `webhook` is passed, nothing will be posted -- the script still executes)
+Now, create the following environmental variables (not required -- if `region` isn't specified default gets to `eu-west-1` and if no `webhook` is passed, nothing will be posted in slack -- the script still executes)
 - WEBHOOK_URL
 - REGION
 
 `REGION` -> is the AWS region we want to work with -- While `WEBHOOK_URL` contains the Slack channel WebHook URL to post to.
 
 ### Filing Bugs/Contribution
+
 Feel free to file a issue or create a PR for that issue if you come across any.
