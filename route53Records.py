@@ -149,12 +149,12 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
 
     if available == True:
         write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{record}")
-        post += f"- {subdomain} - {record}\n"
+        post += f"• {subdomain} — *`{record}`*\n"
 
     else:
         write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{available}{w}, {y}{record}")
 
-    return(post)
+    return(post.replace('/', ''))
 
 
 def S3ResourceCall():
@@ -184,6 +184,7 @@ def getBucketNamesFromResults(jsonBlob):
 
     return(subds, buckets, recs)
 
+
 def checkS3BucketTakeover(s3_resource, subdomain, bucketName, dnsRecords):
     post = ''
 
@@ -202,12 +203,13 @@ def checkS3BucketTakeover(s3_resource, subdomain, bucketName, dnsRecords):
     
     if canTakeOver == True:
         write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{dnsRecords}")
-        post += f"- {subdomain} - {dnsRecords}\n"
+        post += f"• {subdomain} — *`{dnsRecords}`*\n"
 
     else:
         write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{canTakeOver}{w}, {y}{dnsRecords}")
 
     return(post)
+
 
 def addArguments():
     '''
@@ -250,7 +252,7 @@ def formatSlackPostToCSV(post):
     to write to domain.tld.csv
     '''
 
-    return post.replace(' - ', ',').replace('- ', '')
+    return post.replace(' — *`', ',').replace('• ', '').replace('`*\n', '\n')
 
 
 def main():
@@ -290,10 +292,14 @@ def main():
                     s3rsCall = S3ResourceCall()
 
                     for subdomains, bckets, dnsRecords in zip(subds, buckets, recs):
-                        if args.webhook:
+                        if args.webhook and args.csv:
+                            _slack += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
+                            csvData += _slack
+
+                        elif args.webhook:
                             _slack += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
 
-                        if args.csv:
+                        elif args.csv:
                             csvData += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
 
                         else:
@@ -406,7 +412,6 @@ def main():
                 else:
                     for subdomains, records in zip(subd, rec):
                         checkElasticBeanStalkTakeover(clientCall, subdomains, records)
-
 
     else:
     	parser.print_help()
