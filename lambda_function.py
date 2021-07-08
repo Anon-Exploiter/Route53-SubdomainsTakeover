@@ -166,10 +166,12 @@ def lambda_handler(event, context):
     region = os.getenv('REGION')
 
     for hostName, hostId in zip(hostedZones.keys(), hostedZones.values()):
+        _slack = ''
         print(f"{hostName}\n")
-        zoneDetails = getZoneDetails(hostName, hostId, False)
 
-        slackPost = f"\n*Host: `{hostName}`*\n\n"
+        zoneDetails = getZoneDetails(hostName, hostId, False)
+        slackPost = f"\n*Following DNS records have been detected to be potentially stale and vulnerable to subdomain takeover for hosted zone: `{hostName}`*\n\n"
+
         print("Checking ElasticBeanStalk takeoverable instances")
 
         if region:
@@ -182,6 +184,8 @@ def lambda_handler(event, context):
         clientCall = createElasticBeanStalkClient()
 
         for subdomains, records in zip(subd, rec):
-            slackPost += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
+            _slack += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
-        if webhook: webHookPost(webhook, slackPost)
+        if len(_slack) != 0:
+            slackPost += _slack
+            webHookPost(webhook, slackPost)
