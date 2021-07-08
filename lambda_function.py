@@ -1,8 +1,6 @@
-from utils import *
-
+import boto3
 import json
 import os
-import boto3
 
 import urllib.request
 import urllib.parse
@@ -37,7 +35,7 @@ def parseHostsZone(hostedZones):
     count = 1
 
     for key, vals in zip(hostedZones.keys(), hostedZones.values()):
-        write(var=None, color=c, data=f"[{count}]\t{g}{key}")
+        print(f"[{count}]\t{key}")
         count += 1
 
 
@@ -137,11 +135,11 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
     fqCNAME = jsonData.get('FullyQualifiedCNAME')
 
     if available == True:
-        write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{record}")
+        print(f"{subdomain}, 'CanTakeOver', {record}")
         post += f"- {subdomain} - {record}\n"
 
     else:
-        write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{available}{w}, {y}{record}")
+        print(f"{subdomain}, {available}, {record}")
 
     return(post)
 
@@ -159,7 +157,7 @@ def webHookPost(webhook, data):
 
 
 def lambda_handler(event, context):
-    heading(heading='Listing hosted zones', color=y, afterWebHead='')
+    print('Listing hosted zones\n')
     
     hostedZones     = listHostsZones()
     parsedResults   = parseHostsZone(hostedZones)
@@ -168,11 +166,11 @@ def lambda_handler(event, context):
     region = os.getenv('REGION')
 
     for hostName, hostId in zip(hostedZones.keys(), hostedZones.values()):
-        heading(heading=hostName, color=m, afterWebHead='')
+        print(f"{hostName}\n")
         zoneDetails = getZoneDetails(hostName, hostId, False)
 
         slackPost = f"\n*Host: `{hostName}`*\n\n"
-        heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
+        print("Checking ElasticBeanStalk takeoverable instances")
 
         if region:
             subd, rec = parseElasticBeanStalkInstances(zoneDetails, region)
