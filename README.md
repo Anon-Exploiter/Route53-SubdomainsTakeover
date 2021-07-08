@@ -15,11 +15,37 @@ A script to fetch all route53 hosted zones, fetch all CNAME DNS records of each 
 ### Tested On (OS & Python version)
 - AWS Lambda - Python 3.8 
 
-### Installation on Lambda
+### Creation of Layers for Lambda
 
 First of all pull the **layers** below and upload and create in your AWS account: 
 - https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/releases/download/0.1/route53-subdomain-takeover-layer.zip
 - https://github.com/Anon-Exploiter/Route53-SubdomainsTakeover/releases/download/0.1/awscli-lambda-layer.zip
+
+In case you don't want to use already built layers (due to some reason, hehe), you can create the layers yourself and uploaded them yourselves:
+
+> Make sure you're in the Repo's directory
+
+```bash
+mkdir -p python && \
+    cd python && \
+    pip install -r ../requirements.txt -t . && \
+    cd ../ && \
+    zip -rv route53-subdomain-takeover-layer.zip python/
+```
+
+Now we need another layer for `awscli` binary, the docker image of AWS lambda is kinda weird, so the following script sets up the whole layer for us:
+
+```bash
+curl https://raw.githubusercontent.com/ilyabezdelev/aws-cli-lambda/master/awscli-lambda-package_linux.sh -O && \
+    bash awscli-lambda-package_linux.sh && \
+    rm -rfv awscli-lambda-package_linux.sh
+```
+
+Now create two layers and upload the following generated zip files:
+- route53-subdomain-takeover-layer.zip
+- awscli-lambda-layer.zip
+
+### Creation of AWS Lambda function
 
 Now go ahead and create a **lambda function** with a new role. After creation of the IAM role, edit it's permissions and add the following policy:
 - `AmazonRoute53ReadOnlyAccess`
