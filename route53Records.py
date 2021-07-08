@@ -11,9 +11,6 @@ import urllib.request
 import urllib.parse
 
 
-PROCESSES   = 10
-
-
 def listHostsZones():
     '''
     Fetches all the hostedzones and returns a JSON
