@@ -62,6 +62,7 @@ Now, create the following environmental variables (not required -- if `region` i
 
 ### Note
 - Make sure to increase the execution time of the Lambda function!
+- You can use (0 16 ? * 2 *) for weekly cron in cloudwatch
 
 ### Filing Bugs/Contribution
 
