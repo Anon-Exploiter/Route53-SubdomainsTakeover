@@ -227,7 +227,7 @@ def main():
                 zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
                 if args.webhook: 
-                    slackPost = f"\n*Host: `{hostName}`*\n\n"
+                    slackPost = f"\n*Following DNS records have been detected to be potentially stale and vulnerable to subdomain takeover for hosted zone: `{hostName}`*\n\n"
                     _slack = ''
 
                 if args.csv:
@@ -248,11 +248,12 @@ def main():
                     for subdomains, records in zip(subd, rec):
                         _slack += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
-                    if args.csv:
-                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+                    if len(_slack) != 0:
+                        if args.csv:
+                            with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
 
-                    slackPost += _slack
-                    webHookPost(args.webhook, slackPost)
+                        slackPost += _slack
+                        webHookPost(args.webhook, slackPost)
 
                 else:
                     if args.csv:
@@ -277,7 +278,7 @@ def main():
             zoneDetails = getZoneDetails(hostName, hostId, args.json)
 
             if args.webhook: 
-                slackPost = f"\n*Host: `{hostName}`*\n\n"
+                slackPost = f"\n*Following DNS records have been detected to be potentially stale and vulnerable to subdomain takeover for hosted zone: `{hostName}`*\n\n"
                 _slack = ''
 
             if args.csv:
@@ -298,11 +299,12 @@ def main():
                 for subdomains, records in zip(subd, rec):
                     _slack += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
-                if args.csv:
-                    with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+                if len(_slack) != 0:
+                    if args.csv:
+                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
 
-                slackPost += _slack
-                webHookPost(args.webhook, slackPost)
+                    slackPost += _slack
+                    webHookPost(args.webhook, slackPost)
 
             else:
                 if args.csv:
