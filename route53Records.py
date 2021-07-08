@@ -1,3 +1,4 @@
+from botocore.exceptions import ClientError
 from pygments import highlight, lexers, formatters
 from utils import *
 from sys import argv
@@ -156,6 +157,58 @@ def checkElasticBeanStalkTakeover(eBeanStalkClientCall, subdomain, record):
     return(post)
 
 
+def S3ResourceCall():
+    return boto3.resource('s3')
+
+
+def getBucketNamesFromResults(jsonBlob):
+    subds = []
+    buckets = []
+    recs = []
+
+    isBucket = True
+    jsonBlob = json.loads(jsonBlob)
+
+    for subdomain, dnsRecord in zip(jsonBlob.keys(), jsonBlob.values()):
+        if "s3-website" in dnsRecord:
+            isBucket = False
+            results = dnsRecord.split(".s3-website")
+            bucketName = results[0]
+
+            subds.append(subdomain)
+            buckets.append(bucketName)
+            recs.append(dnsRecord)
+
+    if isBucket:
+        write(var="!", color=r, data='No buckets for this hosts zone..')
+
+    return(subds, buckets, recs)
+
+def checkS3BucketTakeover(s3_resource, subdomain, bucketName, dnsRecords):
+    post = ''
+
+    try:
+        s3_resource.meta.client.head_bucket(Bucket=bucketName)
+        canTakeOver = False
+    
+    except ClientError as error:
+        error_code = int(error.response['Error']['Code'])
+        
+        if error_code == 403:
+            canTakeOver = False
+        
+        elif error_code == 404:
+            canTakeOver = True
+    
+    if canTakeOver == True:
+        write(var=f'{r}!', color=r, data=f"{c}{subdomain}{w}, {r}'CanTakeOver'{w}, {y}{dnsRecords}")
+        post += f"- {subdomain} - {dnsRecords}\n"
+
+    else:
+        write(var='#', color=g, data=f"{c}{subdomain}{w}, {g}{canTakeOver}{w}, {y}{dnsRecords}")
+
+    return(post)
+
 def addArguments():
     '''
     Args
@@ -229,7 +282,22 @@ def main():
 
                 if args.csv:
                     csvData = ''
-                    with open(f'{hostName}csv', 'w+') as f: f.write('Subdomain,CNAME record\n')
+
+                heading(heading="Checking S3 takeoverable buckets", color=y, afterWebHead='')
+                subds, buckets, recs = getBucketNamesFromResults(zoneDetails)
+
+                if len(buckets) != 0:
+                    s3rsCall = S3ResourceCall()
+
+                    for subdomains, bckets, dnsRecords in zip(subds, buckets, recs):
+                        if args.webhook:
+                            _slack += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
+
+                        if args.csv:
+                            csvData += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
+
+                        else:
+                            checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
 
                 heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
@@ -247,7 +315,9 @@ def main():
 
                     if len(_slack) != 0:
                         if args.csv:
-                            with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+                            with open(f'{hostName}csv', 'w+') as f: 
+                                f.write('Subdomain,CNAME record\n')
+                                f.write(formatSlackPostToCSV(_slack))
 
                         slackPost += _slack
                         webHookPost(args.webhook, slackPost)
@@ -257,7 +327,10 @@ def main():
                         for subdomains, records in zip(subd, rec):
                             csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
-                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+                        if len(csvData) != 0:
+                            with open(f'{hostName}csv', 'w+') as f: 
+                                f.write('Subdomain,CNAME record\n')
+                                f.write(formatSlackPostToCSV(csvData))
 
                     else:
                         for subdomains, records in zip(subd, rec):
@@ -280,7 +353,22 @@ def main():
 
             if args.csv:
                 csvData = ''
-                with open(f'{hostName}csv', 'w+') as f: f.write('Subdomain,CNAME record\n')
+
+            heading(heading="Checking S3 takeoverable buckets", color=y, afterWebHead='')
+            subds, buckets, recs = getBucketNamesFromResults(zoneDetails)
+
+            if len(buckets) != 0:
+                s3rsCall = S3ResourceCall()
+
+                for subdomains, bckets, dnsRecords in zip(subds, buckets, recs):
+                    if args.webhook:
+                        _slack += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
+
+                    if args.csv:
+                        csvData += checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
+
+                    else:
+                        checkS3BucketTakeover(s3rsCall, subdomains, bckets, dnsRecords)
 
             heading(heading="Checking ElasticBeanStalk takeoverable instances", color=r, afterWebHead='')
 
@@ -298,7 +386,9 @@ def main():
 
                 if len(_slack) != 0:
                     if args.csv:
-                        with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(_slack))
+                        with open(f'{hostName}csv', 'w+') as f: 
+                            f.write('Subdomain,CNAME record\n')
+                            f.write(formatSlackPostToCSV(_slack))
 
                     slackPost += _slack
                     webHookPost(args.webhook, slackPost)
@@ -308,7 +398,10 @@ def main():
                     for subdomains, records in zip(subd, rec):
                         csvData += checkElasticBeanStalkTakeover(clientCall, subdomains, records)
 
-                    with open(f'{hostName}csv', 'a+') as f: f.write(formatSlackPostToCSV(csvData))
+                    if len(csvData) != 0:
+                        with open(f'{hostName}csv', 'w+') as f: 
+                            f.write('Subdomain,CNAME record\n')
+                            f.write(formatSlackPostToCSV(csvData))
 
                 else:
                     for subdomains, records in zip(subd, rec):
