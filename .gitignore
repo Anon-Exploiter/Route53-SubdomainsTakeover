@@ -2,3 +2,5 @@
 env/
 *.json
 *.csv
+*.zip
+test*
